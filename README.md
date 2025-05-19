@@ -1,10 +1,6 @@
 # 🛡️ AI Automated Open-Source SOC Platform
 
 A powerful, cross-platform **Security Operations Center (SOC) platform** built using **Flask**, **MongoDB**, **WebSocket**, and **AI-based NLP detection** to provide real-time threat monitoring, log aggregation, and automated mitigation for internal and external systems.
-
-![logo](https://github.com/user-attachments/assets/af497d67-d7c6-4571-b3d8-6519ade4301a)
-
-
 ---
 
 ## 🚀 Key Features
@@ -37,10 +33,10 @@ A powerful, cross-platform **Security Operations Center (SOC) platform** built u
 
 .
 ├── app.py               # Main Flask application
-├── login.html           # Login page
-├── logs.html            # Log + Threat dashboard
+├── templates\login.html           # Login page
+├── templates\logs.html            # Log + Threat dashboard
 ├── log\_collection.py    # External agent script for other systems
-├── logo.jpg             # UI icon/logo
+├── templates\logo.jpg             # UI icon/logo
 
 ````
 
@@ -78,14 +74,6 @@ python log_collection.py
 ```
 
 > Make sure the IP and port in `API_IP` match the main platform server.
-
----
-
-## 🔐 Default Admin Credentials
-
-| Username     | Password      |
-| ------------ | ------------- |
-| `admin_user` | `@admin_user` |
 
 ---
 
