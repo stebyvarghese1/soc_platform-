@@ -35,7 +35,7 @@ A powerful, cross-platform **Security Operations Center (SOC) platform** built u
 ├── app.py               # Main Flask application
 ├── templates\login.html           # Login page
 ├── templates\logs.html            # Log + Threat dashboard
-├── log\_collection.py    # External agent script for other systems
+├── collection.py    # External agent script for other systems
 ├── templates\logo.jpg             # UI icon/logo
 
 ````
