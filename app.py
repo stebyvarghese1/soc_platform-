@@ -44,7 +44,7 @@ try:
     uri = f"mongodb+srv://{username}:{password}@{cluster_name}.y49v4.mongodb.net/?retryWrites=true&w=majority&appName={cluster_name}"
     client = MongoClient(uri, serverSelectionTimeoutMS=60000)
     db = client["log_dashboard"]
-    print("[✅] MongoDB connected successfully!")
+    print("MongoDB connected successfully!")
 except Exception as e:
     print(f"[!] MongoDB Connection Error: {e}")
     sys.exit(1)
@@ -69,7 +69,7 @@ def request_admin():
 def execute_command(command):
     try:
         output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, text=True)
-        return output.strip() if output else "✅ No logs available."
+        return output.strip() if output else "No logs available."
     except subprocess.CalledProcessError as e:
         return f"Error executing command: {e}"
     except Exception as e:
@@ -305,7 +305,7 @@ def log_action(threat):
         "action_taken": threat["action"],
         "timestamp": datetime.now()
     })
-    print(f"[✅ ACTION] {threat['action']} executed for {threat['type']}")
+    print(f"[ACTION] {threat['action']} executed for {threat['type']}")
 
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -357,7 +357,7 @@ def isolate_ip():
         command = f"sudo iptables -A INPUT -s {ip} -j REJECT"  # Linux (For Windows, use netsh)
         subprocess.run(command, shell=True, check=True)
 
-        return jsonify({"status": "success", "message": f"🔒 IP {ip} has been isolated!"})
+        return jsonify({"status": "success", "message": f"IP {ip} has been isolated!"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -524,13 +524,13 @@ def login():
             # Use updated credentials if present
             if username == stored_credentials.get("username") and password == stored_credentials.get("password"):
                 session["logged_in"] = True
-                print(f"[✅] Login Successful: {username}")
+                print(f"Login Successful: {username}")
                 return redirect(url_for("display_logs"))
         else:
             # Allow default credentials only if no updated ones exist
             if username == default_username and password == default_password:
                 session["logged_in"] = True
-                print("[✅] Login Successful (Default Credentials)")
+                print("Login Successful (Default Credentials)")
                 return redirect(url_for("display_logs"))
 
         # Handle invalid login
@@ -591,9 +591,9 @@ def receive_logs():
         raw_logs = data['logs']
         timestamp = data.get('timestamp', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-        print(f"[✅] Received logs from {system_name}. Processing and storing...")
+        print(f"Received logs from {system_name}. Processing and storing...")
 
-        # ✅ Process logs the same way as admin system logs
+        # Process logs the same way as admin system logs
         processed_logs = {}
         for category, log_content in raw_logs.items():
             processed_logs[category] = {
@@ -601,10 +601,10 @@ def receive_logs():
                 "logs": log_content
             }
 
-        # ✅ Detect threats
+        #  Detect threats
         detected_threats = detect_threats(str(raw_logs))
 
-        # ✅ Store logs in MongoDB like admin system logs
+        # Store logs in MongoDB like admin system logs
         db.external_logs.insert_one({
             "system_name": system_name,
             "logs": processed_logs,
@@ -613,7 +613,7 @@ def receive_logs():
             }
             )
 
-        # ✅ Send logs to frontend for real-time display
+        #  Send logs to frontend for real-time display
         socketio.emit('new_external_log', {
             "system_name": system_name,
             "logs": processed_logs,
@@ -621,7 +621,7 @@ def receive_logs():
             "timestamp": timestamp
         }, namespace='/')
 
-        print(f"[✅] Logs from {system_name} stored in MongoDB and sent to frontend.")
+        print(f" Logs from {system_name} stored in MongoDB and sent to frontend.")
 
         return jsonify({"status": "success", "message": "Logs processed, stored, and broadcasted"}), 200
 
@@ -641,7 +641,7 @@ def change_credentials():
         # Update session with new credentials
         session["username"] = new_username
         session["password"] = new_password
-        print(f"[✅] Credentials Updated: {new_username}")
+        print(f"Credentials Updated: {new_username}")
 
         # Update credentials in MongoDB
         db.credentials.update_one({}, {"$set": {"username": new_username, "password": new_password}}, upsert=True)
@@ -654,7 +654,7 @@ def change_credentials():
 @app.route('/logout')
 def logout():
     session.clear()  # Clear session on logout
-    print("[🚪] User logged out")
+    print("User logged out")
     return redirect(url_for("login"))   
 
 if __name__ == '__main__':
