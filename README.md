@@ -3,7 +3,15 @@
 A powerful, cross-platform **Security Operations Center (SOC) platform** built using **Flask**, **MongoDB**, **WebSocket**, and **AI-based NLP detection** to provide real-time threat monitoring, log aggregation, and automated mitigation for internal and external systems.
 ---
 
+## screenshots
+
+<img width="1910" height="859" alt="Screenshot 2025-12-28 144323" src="https://github.com/user-attachments/assets/b0ca0118-672d-456e-a440-aad7526549a4" />
+
+<img width="1917" height="844" alt="Screenshot 2025-12-28 144104" src="https://github.com/user-attachments/assets/f6b93f46-700e-41f8-97e1-f4b20357f9eb" />
+
+
 ## 🚀 Key Features
+
 
 - 🌐 **Multi-System Log Aggregation** (Local + External)
 - 🔍 **AI/NLP-Based Threat Detection** using MiniLM (sentence-transformers)
