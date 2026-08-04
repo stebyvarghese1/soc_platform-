@@ -2,6 +2,11 @@ from dotenv import load_dotenv
 import os
 load_dotenv()
 
+# Limit thread memory allocations for low-RAM cloud instances (Render 512MB limit)
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, Response
 import platform
 import io
@@ -532,8 +537,8 @@ def login():
         password = request.form.get("password")
 
         # Default credentials
-        default_username = os.environ.get("DEFAULT_ADMIN_USER")
-        default_password = os.environ.get("DEFAULT_ADMIN_PASS")
+        default_username = os.environ.get("DEFAULT_ADMIN_USER", "admin_user")
+        default_password = os.environ.get("DEFAULT_ADMIN_PASS", "@admin_user")
 
         # Retrieve stored credentials from MongoDB (if any)
         stored_credentials = db.credentials.find_one({})
