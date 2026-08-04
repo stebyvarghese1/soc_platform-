@@ -1,6 +1,9 @@
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, Response
 import platform
-import os
 import io
 import re
 import urllib.parse
@@ -24,30 +27,44 @@ import numpy as np
 
 app = Flask(__name__)
 # Initialize Flask WebSocket (for real-time UI alerts)
-socketio = SocketIO(app, message_queue="redis://", cors_allowed_origins="*")  # Use Redis for scaling
+redis_url = os.environ.get("REDIS_URL")
+if redis_url:
+    socketio = SocketIO(app, message_queue=redis_url, cors_allowed_origins="*")
+else:
+    socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Load MiniLM model for AI-based detection
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+# Lazy loading MiniLM model for AI-based detection
+_model = None
+def get_model():
+    global _model
+    if _model is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+            print("[*] Loading SentenceTransformer model...")
+            _model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+            print("[✅] SentenceTransformer model loaded successfully.")
+        except Exception as e:
+            print(f"[!] Warning: SentenceTransformer model failed to load: {e}")
+            _model = False
+    return _model if _model is not False else None
 
 
 # Secret key for session management
-app.secret_key = "your_secret_key"
+app.secret_key = os.environ.get("SECRET_KEY", "your_secret_key")
 app.permanent_session_lifetime = timedelta(hours=1)  # Session expires in 1 hour
 
-# MongoDB connection details
-username = urllib.parse.quote_plus("admin_user")
-password = urllib.parse.quote_plus("@admin_user")
-cluster_name = "sop"
+# MongoDB connection string from environment
+uri = os.environ.get("MONGO_URI")
+if not uri:
+    print("[!] Warning: MONGO_URI environment variable is not set. Check your .env file.")
 
 # MongoDB client connection
 try:
-    uri = f"mongodb+srv://{username}:{password}@{cluster_name}.y49v4.mongodb.net/?retryWrites=true&w=majority&appName={cluster_name}"
-    client = MongoClient(uri, serverSelectionTimeoutMS=60000)
+    client = MongoClient(uri, serverSelectionTimeoutMS=10000)
     db = client["log_dashboard"]
-    print("MongoDB connected successfully!")
+    print("[✅] MongoDB connected successfully!")
 except Exception as e:
     print(f"[!] MongoDB Connection Error: {e}")
-    sys.exit(1)
 
 # Ensure script runs with admin privileges (Windows/Linux/macOS)
 def request_admin():
@@ -69,7 +86,7 @@ def request_admin():
 def execute_command(command):
     try:
         output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, text=True)
-        return output.strip() if output else "No logs available."
+        return output.strip() if output else "✅ No logs available."
     except subprocess.CalledProcessError as e:
         return f"Error executing command: {e}"
     except Exception as e:
@@ -217,8 +234,10 @@ def detect_threats(log_data):
     historical_entries = list(db.historical_logs.find().limit(100))
     historical_texts = [entry["log_data"] for entry in historical_entries]
     
+    model = get_model()
+    
     # Encode historical logs for anomaly detection
-    if historical_texts:
+    if historical_texts and model is not None:
         historical_embeddings = model.encode(historical_texts, convert_to_numpy=True)
     else:
         historical_embeddings = np.array([])
@@ -254,7 +273,7 @@ def detect_threats(log_data):
                 break  # Stop further checks if a rule-based threat is found
 
         # Anomaly-Based Detection
-        if not threat_detected and historical_embeddings.size > 0:
+        if not threat_detected and historical_embeddings.size > 0 and model is not None:
             log_embedding = model.encode([line], convert_to_numpy=True)
             similarity = np.dot(historical_embeddings, log_embedding.T).max()
             
@@ -271,7 +290,7 @@ def detect_threats(log_data):
                 threats.append(threat)
 
         # AI-Based Detection (NLP Embeddings)
-        if not threat_detected and historical_embeddings.size > 0:
+        if not threat_detected and historical_embeddings.size > 0 and model is not None:
             log_embedding = model.encode([line], convert_to_numpy=True)
             similarity_scores = np.dot(historical_embeddings, log_embedding.T)
             
@@ -305,7 +324,7 @@ def log_action(threat):
         "action_taken": threat["action"],
         "timestamp": datetime.now()
     })
-    print(f"[ACTION] {threat['action']} executed for {threat['type']}")
+    print(f"[✅ ACTION] {threat['action']} executed for {threat['type']}")
 
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -357,7 +376,7 @@ def isolate_ip():
         command = f"sudo iptables -A INPUT -s {ip} -j REJECT"  # Linux (For Windows, use netsh)
         subprocess.run(command, shell=True, check=True)
 
-        return jsonify({"status": "success", "message": f"IP {ip} has been isolated!"})
+        return jsonify({"status": "success", "message": f"🔒 IP {ip} has been isolated!"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -513,8 +532,8 @@ def login():
         password = request.form.get("password")
 
         # Default credentials
-        default_username = "admin_user"
-        default_password = "@admin_user"
+        default_username = os.environ.get("DEFAULT_ADMIN_USER")
+        default_password = os.environ.get("DEFAULT_ADMIN_PASS")
 
         # Retrieve stored credentials from MongoDB (if any)
         stored_credentials = db.credentials.find_one({})
@@ -524,13 +543,13 @@ def login():
             # Use updated credentials if present
             if username == stored_credentials.get("username") and password == stored_credentials.get("password"):
                 session["logged_in"] = True
-                print(f"Login Successful: {username}")
+                print(f"[✅] Login Successful: {username}")
                 return redirect(url_for("display_logs"))
         else:
             # Allow default credentials only if no updated ones exist
             if username == default_username and password == default_password:
                 session["logged_in"] = True
-                print("Login Successful (Default Credentials)")
+                print("[✅] Login Successful (Default Credentials)")
                 return redirect(url_for("display_logs"))
 
         # Handle invalid login
@@ -591,9 +610,9 @@ def receive_logs():
         raw_logs = data['logs']
         timestamp = data.get('timestamp', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-        print(f"Received logs from {system_name}. Processing and storing...")
+        print(f"[✅] Received logs from {system_name}. Processing and storing...")
 
-        # Process logs the same way as admin system logs
+        # ✅ Process logs the same way as admin system logs
         processed_logs = {}
         for category, log_content in raw_logs.items():
             processed_logs[category] = {
@@ -601,10 +620,10 @@ def receive_logs():
                 "logs": log_content
             }
 
-        #  Detect threats
+        # ✅ Detect threats
         detected_threats = detect_threats(str(raw_logs))
 
-        # Store logs in MongoDB like admin system logs
+        # ✅ Store logs in MongoDB like admin system logs
         db.external_logs.insert_one({
             "system_name": system_name,
             "logs": processed_logs,
@@ -613,7 +632,7 @@ def receive_logs():
             }
             )
 
-        #  Send logs to frontend for real-time display
+        # ✅ Send logs to frontend for real-time display
         socketio.emit('new_external_log', {
             "system_name": system_name,
             "logs": processed_logs,
@@ -621,7 +640,7 @@ def receive_logs():
             "timestamp": timestamp
         }, namespace='/')
 
-        print(f" Logs from {system_name} stored in MongoDB and sent to frontend.")
+        print(f"[✅] Logs from {system_name} stored in MongoDB and sent to frontend.")
 
         return jsonify({"status": "success", "message": "Logs processed, stored, and broadcasted"}), 200
 
@@ -641,7 +660,7 @@ def change_credentials():
         # Update session with new credentials
         session["username"] = new_username
         session["password"] = new_password
-        print(f"Credentials Updated: {new_username}")
+        print(f"[✅] Credentials Updated: {new_username}")
 
         # Update credentials in MongoDB
         db.credentials.update_one({}, {"$set": {"username": new_username, "password": new_password}}, upsert=True)
@@ -654,10 +673,11 @@ def change_credentials():
 @app.route('/logout')
 def logout():
     session.clear()  # Clear session on logout
-    print("User logged out")
+    print("[🚪] User logged out")
     return redirect(url_for("login"))   
 
 if __name__ == '__main__':
     if "--elevated" not in sys.argv:
         request_admin()
-    app.run(host="0.0.0.0",port=5000,debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host="0.0.0.0", port=port, debug=False)
