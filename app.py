@@ -65,7 +65,7 @@ if not uri:
 
 # MongoDB client connection
 try:
-    client = MongoClient(uri, serverSelectionTimeoutMS=10000)
+    client = MongoClient(uri, serverSelectionTimeoutMS=10000, tlsCAFile=certifi.where())
     db = client["log_dashboard"]
     print("[✅] MongoDB connected successfully!")
 except Exception as e:
@@ -541,7 +541,11 @@ def login():
         default_password = os.environ.get("DEFAULT_ADMIN_PASS", "@admin_user")
 
         # Retrieve stored credentials from MongoDB (if any)
-        stored_credentials = db.credentials.find_one({})
+        stored_credentials = None
+        try:
+            stored_credentials = db.credentials.find_one({})
+        except Exception as db_err:
+            print(f"[!] MongoDB Query Warning during login: {db_err}")
 
         # Authentication Logic:
         if stored_credentials:
