@@ -1,3 +1,5 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # Core Web Framework & WebSockets
 Flask>=2.0.0
 Flask-SocketIO>=5.0.0
@@ -9,7 +11,8 @@ python-dotenv>=1.0.0
 pymongo>=4.0.0
 dnspython>=2.0.0
 
-# Machine Learning & AI Threat Detection
+# Machine Learning & AI (CPU-only PyTorch to prevent Render 512MB RAM OOM)
+torch
 sentence-transformers>=2.2.0
 numpy>=1.21.0
 
