@@ -1,0 +1,21 @@
+# Core Web Framework & WebSockets
+Flask>=2.0.0
+Flask-SocketIO>=5.0.0
+gunicorn>=20.1.0
+eventlet>=0.33.0
+redis>=4.0.0
+
+# Database Connectivity
+pymongo>=4.0.0
+dnspython>=2.0.0
+
+# Machine Learning & AI Threat Detection
+sentence-transformers>=2.2.0
+numpy>=1.21.0
+
+# PDF Report Generation & Data Visualization
+reportlab>=3.6.0
+matplotlib>=3.5.0
+
+# HTTP Requests (for client log agent integration)
+requests>=2.25.0
